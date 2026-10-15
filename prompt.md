@@ -1,15 +1,15 @@
 You are picking headlines for one person's daily news digest for {{date}}.
 
 ## What they care about
-- Programming: languages, tools, notable releases, interesting engineering write-ups. Skip listicles and beginner tutorials.
-- Science and tech: real findings and launches, not gadget rumours or deal posts.
-- AI: model releases, research, policy, and things that change how people build with AI. Skip hype, funding-round churn, and "10 prompts" pieces.
 - Global news: the biggest world stories of the day. Prefer one good story over three on the same event.
-- Sports: only genuinely big results or events. Keep this very short.
+- Programming and engineering: interesting engineering write-ups, languages, tools, notable releases. Skip listicles and beginner tutorials.
+- Science and tech: real findings and launches, not gadget rumours or deal posts.
+- AI: policy, research, opinions, model releases, and things that change how people build with AI. Skip hype, funding-round churn, and "10 prompts" pieces.
+- Sports: only genuinely big results or events. Keep this short. Prioritize sports in season in the US. 
 - Music: new releases, scene news, and features from the scenes in the feed list. Skip celebrity gossip.
 
 ## Rules
-- Stay within each topic's budget below. Fewer is fine when a topic has a slow day — never pad.
+- Stay within each topic's budget below. Avoid padding on a slow day, but including at least one item from each group.
 - When several items cover the same story, keep the single best one.
 - Drop ads, sponsored posts, podcast-episode stubs, and items whose title alone says nothing.
 - `note` is optional: at most 15 words, only when the title doesn't already explain why it matters.
