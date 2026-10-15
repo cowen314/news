@@ -10,7 +10,7 @@ Each day at the scheduled time:
 
 1. **Fetch.** `digest.py` downloads every feed in `feeds.txt` (all at once, in a few seconds).
 2. **Drop what you've seen.** Anything listed in `seen.json`, or older than 36 hours, is skipped. Each feed contributes at most 15 fresh items.
-3. **One model call.** The remaining headlines (usually 50–150) go to a small Claude model, wrapped in `prompt.md`. It returns the IDs to keep per topic, a short note where useful, and the top few stories. It never writes headlines or URLs itself; those come straight from the feeds.
+3. **One model call.** The remaining headlines (usually 50-150) go to a small Claude model, wrapped in `prompt.md`. It returns the IDs to keep per topic, a short note where useful, and the top few stories. It never writes headlines or URLs itself; those come straight from the feeds.
 4. **Deliver.** Email gets the full digest grouped by topic. Push gets just the top stories.
 5. **Mark read.** Every item the model saw is added to `seen.json`, and the workflow commits that file back to the repo. Entries older than 30 days are pruned so it stays small.
 
@@ -28,7 +28,7 @@ If the API key is missing or the call fails, it falls back to "newest N per topi
 
 ## Setup (about 15 minutes)
 
-1. **Make a private GitHub repo** and upload these files, keeping the `.github/workflows/` folder path.
+1. **Make a private GitHub repo** and upload these files, keeping the `.github/workflows/` folder path. Alternatively, fork this repo.
 2. **Get an Anthropic API key** at console.anthropic.com. One digest is a few thousand tokens to a Haiku-class model, a fraction of a cent per day.
 3. **Pick delivery and set it up:**
    - **Email (Gmail).** Turn on 2-Step Verification, then create an *app password* at myaccount.google.com/apppasswords. Other providers work too; set `SMTP_HOST` / `SMTP_PORT` in the workflow.
@@ -56,9 +56,9 @@ If the API key is missing or the call fails, it falls back to "newest N per topi
 
 ## Day-to-day, from your phone
 
-- **Add or remove a feed:** open `feeds.txt` on github.com (or in the GitHub app), tap the pencil, add a line, commit. It's used from the next run.
+- **Add or remove a feed:** edit `feeds.txt` on github.com (or in the GitHub app). It's used from the next run.
 - **Switch email ↔ push:** change the `DELIVERY` variable, or pick a delivery when you run it manually.
-- **Tune what gets picked:** edit `prompt.md` in plain English.
+- **Tune what gets picked:** edit `prompt.md`.
 
 **Finding a feed URL.** Try the site's address with `/feed`, `/rss`, or `/rss.xml` added, or look for an RSS icon. Search "*site name* RSS". For Hacker News, hnrss.org lets you filter, e.g. `https://hnrss.org/frontpage?points=300` for only big stories.
 
@@ -68,3 +68,5 @@ If the API key is missing or the call fails, it falls back to "newest N per topi
 python digest.py --dry-run                 # print the digest, send nothing, mark nothing read
 ANTHROPIC_API_KEY=… python digest.py --dry-run
 ```
+
+In VS Code, open `python.code-workspace` and use the Run and Debug panel. **Digest: dry run** reads your key from a `.env` file, which is gitignored. To save your key there, run `python set_key.py`, or the *Set Anthropic API key* task in VS Code (Tasks: Run Task). **Digest: dry run (no AI)** skips the model call.

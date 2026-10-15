@@ -2,7 +2,7 @@ name: News digest
 
 on:
   schedule:
-    - cron: "47 11 * * *"   # daily at 11:47 UTC — change to suit your time zone (GitHub uses UTC)
+    - cron: "0 10 * * *"   # daily at 10:00 UTC, change to suit your time zone (GitHub uses UTC)
   workflow_dispatch:        # adds a "Run workflow" button, with a delivery choice
     inputs:
       delivery:

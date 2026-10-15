@@ -40,13 +40,41 @@
 	"launch": {
 		"configurations": [
 			{
-				"name": "Run example",
+				// Reads ANTHROPIC_API_KEY etc. from .env (gitignored) if present
+				"name": "Digest: dry run",
 				"type": "debugpy",
 				"request": "launch",
-				"module": "examples.py",
+				"program": "${workspaceFolder}/digest.py",
+				"args": ["--dry-run"],
+				"cwd": "${workspaceFolder}",
+				"envFile": "${workspaceFolder}/.env",
+				"console": "integratedTerminal"
+			},
+			{
+				// Skips the model call; exercises the "newest N per topic" fallback
+				"name": "Digest: dry run (no AI)",
+				"type": "debugpy",
+				"request": "launch",
+				"program": "${workspaceFolder}/digest.py",
+				"args": ["--dry-run"],
+				"cwd": "${workspaceFolder}",
+				"env": { "ANTHROPIC_API_KEY": "" },
 				"console": "integratedTerminal"
 			}
 		],
 		"compounds": []
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "Set Anthropic API key",
+				"type": "process",
+				"command": "${command:python.interpreterPath}",
+				"args": ["${workspaceFolder}/set_key.py"],
+				"presentation": { "focus": true },
+				"problemMatcher": []
+			}
+		]
 	}
 }
