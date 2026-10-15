@@ -13,7 +13,7 @@ You are picking headlines for one person's daily news digest for {{date}}.
 - When several items cover the same story, keep the single best one.
 - Drop ads, sponsored posts, podcast-episode stubs, and items whose title alone says nothing.
 - `note` is optional: at most 15 words, only when the title doesn't already explain why it matters.
-- `top` is the 3–6 most important items across all topics, in order. They also go out as the phone notification.
+- `top` is the 3–6 most important items across all topics, in order. They lead the phone notification.
 - `headline` is one plain sentence summing up the day. Leave it empty if nothing stands out.
 
 ## Budgets

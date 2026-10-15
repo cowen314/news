@@ -308,17 +308,37 @@ def render_html(items, d) -> str:
 
 
 def render_push(items, d) -> str:
-    ids = d["top"] or [i for ids in d["by_topic"].values() for i in ids[:1]]
-    if push_markdown():
-        lines = [f"[{items[i]['title']}]({items[i]['link']}) · {items[i]['source']}" for i in ids]
-    else:
-        lines = [f"{items[i]['title']} · {items[i]['source']}\n{items[i]['link']}" for i in ids]
+    """The whole digest: headline, top stories, then the rest by topic. If it won't fit in one
+    ntfy message, trim from the end of the largest section so every topic keeps something."""
+    md = push_markdown()
+    def line(i):
+        e = items[i]
+        return f"• [{e['title']}]({e['link']}) · {e['source']}" if md else f"• {e['title']} · {e['source']}\n  {e['link']}"
+
+    top = d["top"]
+    sections = [("Top", list(top))] + [(name, [i for i in ids if i not in top]) for name, ids in d["by_topic"].items()]
     total = sum(len(v) for v in d["by_topic"].values())
-    text = "\n\n".join(lines)
-    while len(text.encode()) > PUSH_LIMIT_BYTES and lines:
-        lines.pop()
-        text = "\n\n".join(lines)
-    return text + f"\n\n{total} stories in today's full digest."
+
+    def compose():
+        out = [d["headline"]] if d["headline"] else []
+        for name, ids in sections:
+            if ids:
+                out.append((f"**{name}**" if md else name.upper()) + "\n" + "\n".join(line(i) for i in ids))
+        shown = sum(len(ids) for _, ids in sections)
+        if shown < total:
+            out.append(f"+{total - shown} more didn't fit.")
+        return "\n\n".join(out)
+
+    text = compose()
+    while len(text.encode()) > PUSH_LIMIT_BYTES:
+        name, ids = max(sections[1:] or sections, key=lambda s: len(s[1]))
+        if len(ids) <= 1:                  # every topic is down to one item; trim top stories instead
+            ids = sections[0][1]
+            if len(ids) <= 1:
+                break
+        ids.pop()
+        text = compose()
+    return text
 
 
 def push_markdown() -> bool:
