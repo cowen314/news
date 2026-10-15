@@ -1,0 +1,52 @@
+{
+	"folders": [
+		{
+			"path": ".",
+		}
+	],
+	"settings": {
+		"editor.formatOnSave": true,
+		"editor.defaultFormatter": "ms-python.vscode-pylance",
+		// Start all terminals at the workspace root
+		"terminal.integrated.splitCwd": "workspaceRoot",
+		// Dock the toolbar at the bottom of the window
+		"debug.toolBarLocation": "docked",
+		// Use pretty colors
+		"editor.bracketPairColorization.enabled": true,
+		// Python-specific settings
+		"python.languageServer": "Pylance",
+		"python.analysis.diagnosticMode": "workspace",
+		"python.analysis.typeCheckingMode": "basic",
+		"[python]": {
+			"editor.formatOnSave": true,
+			"editor.defaultFormatter": "charliermarsh.ruff",
+			"editor.codeActionsOnSave": {
+				"source.fixAll": "explicit",
+				"source.organizeImports": "explicit"
+			}
+		},
+		"[json]": {
+			"editor.defaultFormatter": "vscode.json-language-features"
+		},
+		"[jsonc]": {
+			"editor.defaultFormatter": "vscode.json-language-features"
+		},
+	},
+	"extensions": {
+		"recommendations": [
+			"charliermarsh.ruff"
+		]
+	},
+	"launch": {
+		"configurations": [
+			{
+				"name": "Run example",
+				"type": "debugpy",
+				"request": "launch",
+				"module": "examples.py",
+				"console": "integratedTerminal"
+			}
+		],
+		"compounds": []
+	}
+}

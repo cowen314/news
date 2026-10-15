@@ -1,0 +1,52 @@
+name: News digest
+
+on:
+  schedule:
+    - cron: "47 11 * * *"   # daily at 11:47 UTC — change to suit your time zone (GitHub uses UTC)
+  workflow_dispatch:        # adds a "Run workflow" button, with a delivery choice
+    inputs:
+      delivery:
+        description: "Delivery for this run"
+        type: choice
+        options: [default, email, push, both]
+        default: default
+
+permissions:
+  contents: write           # lets the job commit seen.json (the "already read" list) back
+
+concurrency: news-digest    # never run two digests at once
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build and send digest
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          MODEL: ${{ vars.MODEL }}
+          NTFY_MARKDOWN: ${{ vars.NTFY_MARKDOWN }}
+          # Manual run's choice wins; otherwise the DELIVERY repo variable; otherwise email.
+          DELIVERY: ${{ (inputs.delivery != '' && inputs.delivery != 'default') && inputs.delivery || vars.DELIVERY || 'email' }}
+        run: python digest.py
+
+      - name: Mark today's items as read
+        run: |
+          git config user.name "news-digest"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add seen.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Mark digest items read"
+            git pull --rebase    # in case you edited feeds.txt while this ran
+            git push
+          fi

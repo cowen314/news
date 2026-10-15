@@ -1,0 +1,31 @@
+# Your news sources. Edit this file anywhere — including the GitHub app or website on your phone.
+#
+#   [Topic name] max=N     starts a topic; N = most headlines from this topic per digest
+#   https://…/feed         one feed URL per line under its topic
+#   https://…/feed max=3   optional: take at most 3 fresh items from this one feed
+#
+# Lines starting with # are ignored, so you can "turn off" a feed by putting # in front of it.
+
+[Programming] max=6
+https://hnrss.org/frontpage?points=150
+https://lobste.rs/rss max=8
+
+[AI] max=6
+https://simonwillison.net/atom/entries/
+https://hnrss.org/newest?q=LLM+OR+%22AI+model%22&points=100
+
+[Science & Tech] max=6
+https://www.quantamagazine.org/feed/
+https://www.sciencedaily.com/rss/top/science.xml max=8
+https://feeds.arstechnica.com/arstechnica/index max=10
+
+[World] max=6
+https://feeds.bbci.co.uk/news/world/rss.xml max=10
+https://www.theguardian.com/world/rss max=10
+
+[Sports] max=2
+https://feeds.bbci.co.uk/sport/rss.xml max=6
+
+[Music] max=4
+https://daily.bandcamp.com/feed
+# Add feeds for your scenes here, e.g. a genre blog or label's news feed.
