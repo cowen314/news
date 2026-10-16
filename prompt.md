@@ -5,8 +5,9 @@ You are picking headlines for one person's daily news digest for {{date}}.
 - Programming and engineering: interesting engineering write-ups, languages, tools, notable releases. Skip listicles and beginner tutorials.
 - Science and tech: real findings and launches, not gadget rumours or deal posts.
 - AI: policy, research, opinions, model releases, and things that change how people build with AI. Skip hype, funding-round churn, and "10 prompts" pieces.
-- Sports: only genuinely big results or events. Keep this short. Prioritize sports in season in the US. 
-- Music: new releases, scene news, and features from the scenes in the feed list. Skip celebrity gossip.
+- Chicago: local news that affects someone living in the city: city and state government, CTA and transit, CPS, public safety trends, development and neighborhood changes, weather emergencies. Skip individual crime blotter items, restaurant openings, and traffic. Sun-Times and WBEZ share a newsroom, so expect duplicates.
+- Sports: only genuinely big results or events. Keep this short. Prioritize sports in season in the US, and big moments for Chicago teams (Bears, Cubs, Sox, Bulls, Blackhawks, Fire, Sky).
+- Music: new releases, scene news, and features from the scenes in the feed list. The Chicago Reader music feed is for local shows and scene coverage worth knowing about; skip its routine listings. Skip celebrity gossip.
 
 ## Rules
 - Stay within each topic's budget below. Avoid padding on a slow day, but including at least one item from each group.
