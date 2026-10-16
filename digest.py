@@ -171,9 +171,10 @@ def parse_feed(data: bytes) -> tuple[str, list[dict]]:
     return feed_title, entries
 
 
-def collect(topics: list[dict], seen: dict) -> tuple[list[dict], set[str]]:
+def collect(topics: list[dict], seen: dict) -> tuple[list[dict], set[str], dict]:
     """Fetch every feed in parallel; keep unseen, recent items, capped per feed.
-    Also returns the IDs of every fresh item, including ones the cap dropped, so they count as read."""
+    Also returns the IDs of every fresh item, including ones the cap dropped, so they count as read,
+    and counts of what each step filtered out (for the stats footer)."""
     jobs = [(t, f) for t in topics for f in t["feeds"]]
     cutoff = NOW - timedelta(hours=LOOKBACK_HOURS)
 
@@ -183,7 +184,7 @@ def collect(topics: list[dict], seen: dict) -> tuple[list[dict], set[str]]:
             source, entries = parse_feed(fetch(feed["url"]))
         except (urllib.error.URLError, ET.ParseError, OSError, ValueError) as e:
             print(f"  ! {feed['url']}: {e}", file=sys.stderr)
-            return []
+            return None
         fresh = [e for e in entries
                  if e["id"] not in seen and (e["date"] is None or e["date"] >= cutoff)]
         fresh.sort(key=lambda e: e["date"] or NOW, reverse=True)
@@ -191,19 +192,29 @@ def collect(topics: list[dict], seen: dict) -> tuple[list[dict], set[str]]:
             e["topic"] = topic["name"]
             e["source"] = source or re.sub(r"^https?://(www\.)?([^/]+).*", r"\2", feed["url"])
         print(f"  {len(fresh):3d} new / {len(entries):3d}  {feed['url']}", file=sys.stderr)
-        return fresh
+        return len(entries), fresh
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         results = list(pool.map(work, jobs))
 
     items, ids, all_fresh = [], set(), set()
-    for (_, feed), fresh in zip(jobs, results):
+    stats = {"fetched": 0, "stale": 0, "capped": 0, "dupes": 0, "failed": []}
+    for (_, feed), result in zip(jobs, results):
+        if result is None:
+            stats["failed"].append(re.sub(r"^https?://(www\.)?([^/]+).*", r"\2", feed["url"]))
+            continue
+        total, fresh = result
+        stats["fetched"] += total
+        stats["stale"] += total - len(fresh)
+        stats["capped"] += max(0, len(fresh) - feed["cap"])
         all_fresh.update(e["id"] for e in fresh)
         for e in fresh[: feed["cap"]]:
             if e["id"] not in ids:          # the same story can appear in two feeds
                 ids.add(e["id"])
                 items.append(e)
-    return items, all_fresh
+            else:
+                stats["dupes"] += 1
+    return items, all_fresh, stats
 
 
 # ---------------------------------------------------------------- the one model call
@@ -258,13 +269,32 @@ def select_by_recency(items: list[dict], topics: list[dict]) -> dict:
 
 # ---------------------------------------------------------------- rendering & delivery
 
-def build(items: list[dict], topics: list[dict], choice: dict) -> dict:
+def build(items: list[dict], topics: list[dict], choice: dict, stats: dict, method: str) -> dict:
     notes = {k["id"]: (k.get("note") or "").strip() for k in choice["keep"]}
     by_topic = {t["name"]: [] for t in topics}
+    dropped = {t["name"]: [] for t in topics}
     for k in choice["keep"]:
         by_topic[items[k["id"]]["topic"]].append(k["id"])
+    for i, e in enumerate(items):
+        if i not in notes:
+            dropped[e["topic"]].append(i)
+
+    seen_by_topic = {t["name"]: 0 for t in topics}
+    for e in items:
+        seen_by_topic[e["topic"]] += 1
+    stat_lines = [
+        f"fetched {stats['fetched']} · seen/old {stats['stale']} · over feed cap {stats['capped']} · "
+        f"dupes {stats['dupes']} · candidates {len(items)} · kept {len(notes)}",
+        " · ".join(f"{name} {len(by_topic[name])}/{n}" for name, n in seen_by_topic.items()),
+    ]
+    if method != "model":
+        stat_lines.append(f"picked by {method}, not the model")
+    if stats["failed"]:
+        stat_lines.append(f"{len(stats['failed'])} feed(s) failed: {', '.join(stats['failed'])}")
+
     return {"top": [i for i in choice["top"] if i in notes][:6], "by_topic": by_topic,
-            "notes": notes, "headline": (choice.get("headline") or "").strip()}
+            "notes": notes, "headline": (choice.get("headline") or "").strip(),
+            "dropped": {name: ids for name, ids in dropped.items() if ids}, "stats": stat_lines}
 
 
 def render_text(items, d) -> str:
@@ -281,6 +311,13 @@ def render_text(items, d) -> str:
                     out.append(f"  {d['notes'][i]}")
                 out.append(f"  {e['link']}")
             out.append("")
+    if d["dropped"]:
+        out.append(f"DROPPED ({sum(len(v) for v in d['dropped'].values())})")
+        for name, ids in d["dropped"].items():
+            out.append(f"  {name}")
+            out += [f"  • {items[i]['title']} ({items[i]['source']})" for i in ids]
+        out.append("")
+    out += ["--", *d["stats"]]
     return "\n".join(out)
 
 
@@ -303,24 +340,43 @@ def render_html(items, d) -> str:
                          f'text-transform:uppercase;color:#666">{esc(name)}</h3><ul style="padding-left:18px;margin:0">')
             parts += [li(i) for i in ids]
             parts.append("</ul>")
+    small = 'style="color:#888;font-size:13px;margin:0 0 4px"'
+    if d["dropped"]:
+        parts.append(f'<h3 style="margin:32px 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;'
+                     f'color:#999">Dropped ({sum(len(v) for v in d["dropped"].values())})</h3>')
+        for name, ids in d["dropped"].items():
+            parts.append(f'<p {small}><b>{esc(name)}</b><br>'
+                         + "<br>".join(f'{esc(items[i]["title"])} · {esc(items[i]["source"])}' for i in ids) + "</p>")
+    parts.append(f'<hr style="border:none;border-top:1px solid #ddd;margin:24px 0 8px">'
+                 + "".join(f"<p {small}>{esc(s)}</p>" for s in d["stats"]))
     parts.append("</div>")
     return "".join(parts)
 
 
-def render_push(items, d) -> list[str]:
-    """The whole digest: headline, top stories, then the rest by topic, split into as many
-    ntfy messages as it takes. A topic only spans two messages if it can't fit in one alone."""
+def render_push(items, d) -> tuple[list[str], list[str]]:
+    """Two lists of ntfy messages. The digest: headline, top stories, then the rest by topic. And the
+    run's stats followed by the dropped items, as titles only. Each is split into as many messages
+    as it takes; a topic only spans two messages if it can't fit in one alone."""
     md = push_markdown()
     def line(i):
         e = items[i]
         return f"• [{e['title']}]({e['link']}) · {e['source']}" if md else f"• {e['title']} · {e['source']}\n  {e['link']}"
-    def heading(name):
-        return f"**{name}**" if md else name.upper()
+    def bare(i):
+        return f"• {items[i]['title']} · {items[i]['source']}"
 
     top = d["top"]
     sections = [("Top", list(top))] + [(name, [i for i in ids if i not in top]) for name, ids in d["by_topic"].items()]
+    digest = _pack_push(([d["headline"]] if d["headline"] else []) + _push_blocks(sections, line, md))
+    n_dropped = sum(len(ids) for ids in d["dropped"].values())
+    extra = ["\n".join(d["stats"])] + ([f"Dropped ({n_dropped})"] if n_dropped else [])
+    return digest, _pack_push(extra + _push_blocks(d["dropped"].items(), bare, md))
 
-    blocks = [d["headline"]] if d["headline"] else []
+
+def _push_blocks(sections, line, md) -> list[str]:
+    """One block per non-empty section: its heading and lines, broken up if over the size limit."""
+    def heading(name):
+        return f"**{name}**" if md else name.upper()
+    blocks = []
     for name, ids in sections:
         block = heading(name)
         for i in ids:
@@ -330,7 +386,11 @@ def render_push(items, d) -> list[str]:
             block += "\n" + line(i)
         if ids:
             blocks.append(block)
+    return blocks
 
+
+def _pack_push(blocks) -> list[str]:
+    """Fit whole blocks into as few messages as possible, in order."""
     messages = []
     for block in blocks:
         if messages and len((messages[-1] + "\n\n" + block).encode()) <= PUSH_LIMIT_BYTES:
@@ -357,11 +417,12 @@ def send_email(subject: str, text: str, html_body: str) -> None:
         s.send_message(msg)
 
 
-def send_push(title: str, body: str) -> None:
+def send_push(title: str, body: str, priority: int = 3) -> None:
     server = os.environ.get("NTFY_SERVER", "https://ntfy.sh").rstrip("/")
     req = urllib.request.Request(
         f"{server}/{os.environ['NTFY_TOPIC']}", data=body.encode(), method="POST",
-        headers={"Title": title, "Markdown": "yes" if push_markdown() else "no", "Tags": "newspaper"},
+        headers={"Title": title, "Markdown": "yes" if push_markdown() else "no", "Tags": "newspaper",
+                 "Priority": str(priority)},
     )
     urllib.request.urlopen(req, timeout=20).read()
 
@@ -394,31 +455,38 @@ def main() -> int:
     topics = load_topics()
     seen = load_seen()
     print(f"fetching {sum(len(t['feeds']) for t in topics)} feeds…", file=sys.stderr)
-    items, fresh_ids = collect(topics, seen)
+    items, fresh_ids, stats = collect(topics, seen)
     print(f"{len(items)} unread items", file=sys.stderr)
     if not items:
         print("nothing new; no digest sent", file=sys.stderr)
         return 0
 
-    choice = select_with_model(items, topics) or select_by_recency(items, topics)
-    d = build(items, topics, choice)
+    choice, method = select_with_model(items, topics), "model"
+    if not choice:
+        choice, method = select_by_recency(items, topics), "recency fallback"
+    d = build(items, topics, choice, stats, method)
     subject = f"News digest · {NOW:%a %d %b}"
     text, html_body = render_text(items, d), render_html(items, d)
 
-    pushes = render_push(items, d)
+    pushes, dropped = render_push(items, d)
+    def numbered(title, bodies):
+        return [(title + (f" ({n}/{len(bodies)})" if len(bodies) > 1 else ""), b) for n, b in enumerate(bodies, 1)]
+    pushes, dropped = numbered(subject, pushes), numbered(f"Stats & dropped · {NOW:%a %d %b}", dropped)
     if args.dry_run:
         print(text)
-        for n, body in enumerate(pushes, 1):
-            print(f"\n--- push {n}/{len(pushes)} ({len(body.encode())} bytes) ---\n{body}")
+        for title, body in pushes + dropped:
+            print(f"\n--- push: {title} ({len(body.encode())} bytes) ---\n{body}")
         return 0
 
     if delivery in ("email", "both"):
         send_email(subject, text, html_body)
         print("email sent", file=sys.stderr)
     if delivery in ("push", "both"):
-        for n, body in enumerate(pushes, 1):
-            send_push(subject + (f" ({n}/{len(pushes)})" if len(pushes) > 1 else ""), body)
-        print(f"push sent ({len(pushes)} messages)", file=sys.stderr)
+        for title, body in pushes:
+            send_push(title, body)
+        for title, body in dropped:           # low priority: shows up without buzzing
+            send_push(title, body, priority=2)
+        print(f"push sent ({len(pushes)} digest + {len(dropped)} dropped messages)", file=sys.stderr)
     save_seen(seen, fresh_ids)
     return 0
 
