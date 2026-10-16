@@ -9,7 +9,7 @@ A daily headline digest, built from RSS feeds, trimmed by one small AI call, and
 Each day at the scheduled time:
 
 1. **Fetch.** `digest.py` downloads every feed in `feeds.txt` (all at once, in a few seconds).
-2. **Drop what you've seen.** Anything listed in `seen.json`, or older than 36 hours, is skipped. Each feed contributes at most 15 fresh items.
+2. **Drop what you've seen.** Anything listed in `seen.json`, or older than 36 hours, is skipped. Each feed contributes at most 30 fresh items by default (set `max=N` after a feed URL to change it).
 3. **One model call.** The remaining headlines (usually 50-150) go to a small Claude model, wrapped in `prompt.md`. It returns the IDs to keep per topic, a short note where useful, and the top few stories. It never writes headlines or URLs itself; those come straight from the feeds.
 4. **Deliver.** Email gets the full digest grouped by topic. Push gets the same digest in one notification: top stories first, then the rest by topic, trimmed to fit if it runs long.
 5. **Mark read.** Every item the model saw is added to `seen.json`, and the workflow commits that file back to the repo. Entries older than 30 days are pruned so it stays small.

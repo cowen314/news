@@ -7,26 +7,26 @@
 # Lines starting with # are ignored, so you can "turn off" a feed by putting # in front of it.
 
 [Programming] max=6
-https://hnrss.org/frontpage?points=150
-https://lobste.rs/rss max=8
+https://hnrss.org/frontpage?points=150 max=30
+https://lobste.rs/rss max=25
 
 [AI] max=6
 https://simonwillison.net/atom/entries/
-https://hnrss.org/newest?q=LLM+OR+%22AI+model%22&points=100
+https://hnrss.org/newest?q=LLM+OR+%22AI+model%22&points=100 max=30
 
 [Science & Tech] max=6
 https://www.quantamagazine.org/feed/
-https://www.sciencedaily.com/rss/top/science.xml max=8
-https://feeds.arstechnica.com/arstechnica/index max=10
+https://www.sciencedaily.com/rss/top/science.xml max=25
+https://feeds.arstechnica.com/arstechnica/index max=30
 
 [World] max=6
-https://feeds.bbci.co.uk/news/world/rss.xml max=10
-https://www.theguardian.com/world/rss max=10
+https://feeds.bbci.co.uk/news/world/rss.xml max=40
+https://www.theguardian.com/world/rss max=40
 
 [Chicago] max=5
-https://blockclubchicago.org/feed/ max=8
-https://www.wbez.org/rss/index.xml max=8
-https://news.wttw.com/rss.xml max=5
+https://blockclubchicago.org/feed/ max=25
+https://www.wbez.org/rss/index.xml max=25
+https://news.wttw.com/rss.xml max=25
 
 [Sports] max=2
 https://www.espn.com/espn/rss/news max=6

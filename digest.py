@@ -36,7 +36,7 @@ SEEN_FILE = ROOT / "seen.json"
 
 LOOKBACK_HOURS = 36      # ignore anything older than this, even if never seen
 SEEN_TTL_DAYS = 30       # forget read-markers after this long, so seen.json stays small
-DEFAULT_FEED_CAP = 15    # max fresh items taken from any one feed before the model sees them
+DEFAULT_FEED_CAP = 30    # max fresh items taken from any one feed before the model sees them
 SUMMARY_CHARS = 180      # snippet length passed to the model (keeps the prompt cheap)
 PUSH_LIMIT_BYTES = 3900  # ntfy's limit is 4096 bytes per message
 USER_AGENT = "news-digest/1.0 (personal RSS digest)"
