@@ -307,38 +307,37 @@ def render_html(items, d) -> str:
     return "".join(parts)
 
 
-def render_push(items, d) -> str:
-    """The whole digest: headline, top stories, then the rest by topic. If it won't fit in one
-    ntfy message, trim from the end of the largest section so every topic keeps something."""
+def render_push(items, d) -> list[str]:
+    """The whole digest: headline, top stories, then the rest by topic, split into as many
+    ntfy messages as it takes. A topic only spans two messages if it can't fit in one alone."""
     md = push_markdown()
     def line(i):
         e = items[i]
         return f"• [{e['title']}]({e['link']}) · {e['source']}" if md else f"• {e['title']} · {e['source']}\n  {e['link']}"
+    def heading(name):
+        return f"**{name}**" if md else name.upper()
 
     top = d["top"]
     sections = [("Top", list(top))] + [(name, [i for i in ids if i not in top]) for name, ids in d["by_topic"].items()]
-    total = sum(len(v) for v in d["by_topic"].values())
 
-    def compose():
-        out = [d["headline"]] if d["headline"] else []
-        for name, ids in sections:
-            if ids:
-                out.append((f"**{name}**" if md else name.upper()) + "\n" + "\n".join(line(i) for i in ids))
-        shown = sum(len(ids) for _, ids in sections)
-        if shown < total:
-            out.append(f"+{total - shown} more didn't fit.")
-        return "\n\n".join(out)
+    blocks = [d["headline"]] if d["headline"] else []
+    for name, ids in sections:
+        block = heading(name)
+        for i in ids:
+            if len((block + "\n" + line(i)).encode()) > PUSH_LIMIT_BYTES:
+                blocks.append(block)
+                block = heading(f"{name} (cont.)")
+            block += "\n" + line(i)
+        if ids:
+            blocks.append(block)
 
-    text = compose()
-    while len(text.encode()) > PUSH_LIMIT_BYTES:
-        name, ids = max(sections[1:] or sections, key=lambda s: len(s[1]))
-        if len(ids) <= 1:                  # every topic is down to one item; trim top stories instead
-            ids = sections[0][1]
-            if len(ids) <= 1:
-                break
-        ids.pop()
-        text = compose()
-    return text
+    messages = []
+    for block in blocks:
+        if messages and len((messages[-1] + "\n\n" + block).encode()) <= PUSH_LIMIT_BYTES:
+            messages[-1] += "\n\n" + block
+        else:
+            messages.append(block)
+    return messages
 
 
 def push_markdown() -> bool:
@@ -406,17 +405,20 @@ def main() -> int:
     subject = f"News digest · {NOW:%a %d %b}"
     text, html_body = render_text(items, d), render_html(items, d)
 
+    pushes = render_push(items, d)
     if args.dry_run:
         print(text)
-        print("\n--- push version ---\n" + render_push(items, d))
+        for n, body in enumerate(pushes, 1):
+            print(f"\n--- push {n}/{len(pushes)} ({len(body.encode())} bytes) ---\n{body}")
         return 0
 
     if delivery in ("email", "both"):
         send_email(subject, text, html_body)
         print("email sent", file=sys.stderr)
     if delivery in ("push", "both"):
-        send_push(subject, render_push(items, d))
-        print("push sent", file=sys.stderr)
+        for n, body in enumerate(pushes, 1):
+            send_push(subject + (f" ({n}/{len(pushes)})" if len(pushes) > 1 else ""), body)
+        print(f"push sent ({len(pushes)} messages)", file=sys.stderr)
     save_seen(seen, fresh_ids)
     return 0
 
