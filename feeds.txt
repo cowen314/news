@@ -29,7 +29,7 @@ https://www.wbez.org/rss/index.xml max=8
 https://news.wttw.com/rss.xml max=5
 
 [Sports] max=2
-https://feeds.bbci.co.uk/sport/rss.xml max=6
+https://www.espn.com/espn/rss/news max=6
 
 [Music] max=4
 https://daily.bandcamp.com/feed
