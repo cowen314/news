@@ -272,12 +272,8 @@ def select_by_recency(items: list[dict], topics: list[dict]) -> dict:
 def build(items: list[dict], topics: list[dict], choice: dict, stats: dict, method: str) -> dict:
     notes = {k["id"]: (k.get("note") or "").strip() for k in choice["keep"]}
     by_topic = {t["name"]: [] for t in topics}
-    dropped = {t["name"]: [] for t in topics}
     for k in choice["keep"]:
         by_topic[items[k["id"]]["topic"]].append(k["id"])
-    for i, e in enumerate(items):
-        if i not in notes:
-            dropped[e["topic"]].append(i)
 
     seen_by_topic = {t["name"]: 0 for t in topics}
     for e in items:
@@ -294,7 +290,7 @@ def build(items: list[dict], topics: list[dict], choice: dict, stats: dict, meth
 
     return {"top": [i for i in choice["top"] if i in notes][:6], "by_topic": by_topic,
             "notes": notes, "headline": (choice.get("headline") or "").strip(),
-            "dropped": {name: ids for name, ids in dropped.items() if ids}, "stats": stat_lines}
+            "stats": stat_lines}
 
 
 def render_text(items, d) -> str:
@@ -311,12 +307,6 @@ def render_text(items, d) -> str:
                     out.append(f"  {d['notes'][i]}")
                 out.append(f"  {e['link']}")
             out.append("")
-    if d["dropped"]:
-        out.append(f"DROPPED ({sum(len(v) for v in d['dropped'].values())})")
-        for name, ids in d["dropped"].items():
-            out.append(f"  {name}")
-            out += [f"  • {items[i]['title']} ({items[i]['source']})" for i in ids]
-        out.append("")
     out += ["--", *d["stats"]]
     return "\n".join(out)
 
@@ -341,12 +331,6 @@ def render_html(items, d) -> str:
             parts += [li(i) for i in ids]
             parts.append("</ul>")
     small = 'style="color:#888;font-size:13px;margin:0 0 4px"'
-    if d["dropped"]:
-        parts.append(f'<h3 style="margin:32px 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;'
-                     f'color:#999">Dropped ({sum(len(v) for v in d["dropped"].values())})</h3>')
-        for name, ids in d["dropped"].items():
-            parts.append(f'<p {small}><b>{esc(name)}</b><br>'
-                         + "<br>".join(f'{esc(items[i]["title"])} · {esc(items[i]["source"])}' for i in ids) + "</p>")
     parts.append(f'<hr style="border:none;border-top:1px solid #ddd;margin:24px 0 8px">'
                  + "".join(f"<p {small}>{esc(s)}</p>" for s in d["stats"]))
     parts.append("</div>")
@@ -355,21 +339,17 @@ def render_html(items, d) -> str:
 
 def render_push(items, d) -> tuple[list[str], list[str]]:
     """Two lists of ntfy messages. The digest: headline, top stories, then the rest by topic. And the
-    run's stats followed by the dropped items, as titles only. Each is split into as many messages
-    as it takes; a topic only spans two messages if it can't fit in one alone."""
+    run's stats. Each is split into as many messages as it takes; a topic only spans two messages
+    if it can't fit in one alone."""
     md = push_markdown()
     def line(i):
         e = items[i]
         return f"• [{e['title']}]({e['link']}) · {e['source']}" if md else f"• {e['title']} · {e['source']}\n  {e['link']}"
-    def bare(i):
-        return f"• {items[i]['title']} · {items[i]['source']}"
 
     top = d["top"]
     sections = [("Top", list(top))] + [(name, [i for i in ids if i not in top]) for name, ids in d["by_topic"].items()]
     digest = _pack_push(([d["headline"]] if d["headline"] else []) + _push_blocks(sections, line, md))
-    n_dropped = sum(len(ids) for ids in d["dropped"].values())
-    extra = ["\n".join(d["stats"])] + ([f"Dropped ({n_dropped})"] if n_dropped else [])
-    return digest, _pack_push(extra + _push_blocks(d["dropped"].items(), bare, md))
+    return digest, _pack_push(["\n".join(d["stats"])])
 
 
 def _push_blocks(sections, line, md) -> list[str]:
@@ -468,13 +448,13 @@ def main() -> int:
     subject = f"News digest · {NOW:%a %d %b}"
     text, html_body = render_text(items, d), render_html(items, d)
 
-    pushes, dropped = render_push(items, d)
+    pushes, stats_msgs = render_push(items, d)
     def numbered(title, bodies):
         return [(title + (f" ({n}/{len(bodies)})" if len(bodies) > 1 else ""), b) for n, b in enumerate(bodies, 1)]
-    pushes, dropped = numbered(subject, pushes), numbered(f"Stats & dropped · {NOW:%a %d %b}", dropped)
+    pushes, stats_msgs = numbered(subject, pushes), numbered(f"Stats · {NOW:%a %d %b}", stats_msgs)
     if args.dry_run:
         print(text)
-        for title, body in pushes + dropped:
+        for title, body in pushes + stats_msgs:
             print(f"\n--- push: {title} ({len(body.encode())} bytes) ---\n{body}")
         return 0
 
@@ -484,9 +464,9 @@ def main() -> int:
     if delivery in ("push", "both"):
         for title, body in pushes:
             send_push(title, body)
-        for title, body in dropped:           # low priority: shows up without buzzing
+        for title, body in stats_msgs:        # low priority: shows up without buzzing
             send_push(title, body, priority=2)
-        print(f"push sent ({len(pushes)} digest + {len(dropped)} dropped messages)", file=sys.stderr)
+        print(f"push sent ({len(pushes)} digest + {len(stats_msgs)} stats messages)", file=sys.stderr)
     save_seen(seen, fresh_ids)
     return 0
 
