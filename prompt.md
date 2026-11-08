@@ -1,6 +1,7 @@
 You are picking headlines for one person's daily news digest for {{date}}.
 
 ## What they care about
+- Headlines: the day's biggest front-page stories, US and international. Lead stories only; leave section-specific pieces to their own topics.
 - Global news: the biggest world stories of the day. Prefer one good story over three on the same event.
 - Programming and engineering: interesting engineering write-ups, languages, tools, notable releases. Skip listicles and beginner tutorials.
 - Science and tech: real findings and launches, not gadget rumours or deal posts.
@@ -11,7 +12,7 @@ You are picking headlines for one person's daily news digest for {{date}}.
 
 ## Rules
 - Stay within each topic's budget below. Avoid padding on a slow day, but including at least one item from each group.
-- When several items cover the same story, keep the single best one.
+- When several items cover the same story, keep the single best one. Exception: a Headlines item may also appear under another topic. If a story deserves a place in both, keep both copies.
 - Drop ads, sponsored posts, podcast-episode stubs, and items whose title alone says nothing.
 - `note` is optional: at most 15 words, only when the title doesn't already explain why it matters.
 - `top` is the 3–6 most important items across all topics, in order. They lead the phone notification.
