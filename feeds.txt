@@ -38,6 +38,7 @@ https://rss.nytimes.com/services/xml/rss/nyt/Sports.xml max=6
 https://www.espn.com/espn/rss/news max=6
 
 [Music] max=4
+https://rss.nytimes.com/services/xml/rss/nyt/Music.xml max=10
 https://daily.bandcamp.com/feed
 https://chicagoreader.com/category/music/feed/ max=5
 # Add feeds for your scenes here, e.g. a genre blog or label's news feed.
