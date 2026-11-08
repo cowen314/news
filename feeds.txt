@@ -15,9 +15,10 @@ https://simonwillison.net/atom/entries/
 https://hnrss.org/newest?q=LLM+OR+%22AI+model%22&points=100 max=30
 
 [Science & Tech] max=6
+https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml max=25
+https://feeds.arstechnica.com/arstechnica/index max=30
 https://www.quantamagazine.org/feed/
 https://www.sciencedaily.com/rss/top/science.xml max=25
-https://feeds.arstechnica.com/arstechnica/index max=30
 
 [World] max=6
 https://feeds.bbci.co.uk/news/world/rss.xml max=40
