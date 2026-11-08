@@ -31,6 +31,7 @@ https://www.wbez.org/rss/index.xml max=25
 https://news.wttw.com/rss.xml max=25
 
 [Sports] max=2
+https://rss.nytimes.com/services/xml/rss/nyt/ProBasketball.xml max=10
 https://www.espn.com/espn/rss/news max=6
 
 [Music] max=4
