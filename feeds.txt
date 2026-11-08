@@ -32,7 +32,7 @@ https://blockclubchicago.org/feed/ max=25
 https://www.wbez.org/rss/index.xml max=25
 https://news.wttw.com/rss.xml max=25
 
-[Sports] max=2
+[Sports] max=3
 https://rss.nytimes.com/services/xml/rss/nyt/ProBasketball.xml max=10
 https://rss.nytimes.com/services/xml/rss/nyt/Sports.xml max=6
 https://www.espn.com/espn/rss/news max=6
