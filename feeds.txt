@@ -21,6 +21,7 @@ https://feeds.arstechnica.com/arstechnica/index max=30
 
 [World] max=6
 https://feeds.bbci.co.uk/news/world/rss.xml max=40
+https://rss.nytimes.com/services/xml/rss/nyt/World.xml max=40
 https://www.theguardian.com/world/rss max=40
 
 [Chicago] max=5
