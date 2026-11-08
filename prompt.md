@@ -1,6 +1,7 @@
 You are picking headlines for one person's daily news digest for {{date}}.
 
 ## What they care about
+- Headlines: the day's biggest front-page stories, US and international. Lead stories only; leave section-specific pieces to their own topics.
 - Global news: the biggest world stories of the day. Prefer one good story over three on the same event.
 - Programming and engineering: interesting engineering write-ups, languages, tools, notable releases. Skip listicles and beginner tutorials.
 - Science and tech: real findings and launches, not gadget rumours or deal posts.

@@ -6,6 +6,11 @@
 #
 # Lines starting with # are ignored, so you can "turn off" a feed by putting # in front of it.
 
+[Headlines] max=5
+https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml max=25
+https://feeds.npr.org/1001/rss.xml max=25
+https://www.pbs.org/newshour/feeds/rss/headlines max=20
+
 [Programming] max=6
 https://hnrss.org/frontpage?points=150 max=30
 https://lobste.rs/rss max=25
@@ -22,7 +27,6 @@ https://www.quantamagazine.org/feed/
 https://www.sciencedaily.com/rss/top/science.xml max=25
 
 [World] max=6
-https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml max=25
 https://feeds.bbci.co.uk/news/world/rss.xml max=40
 https://rss.nytimes.com/services/xml/rss/nyt/World.xml max=40
 https://www.theguardian.com/world/rss max=40
