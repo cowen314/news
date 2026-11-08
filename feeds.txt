@@ -22,6 +22,7 @@ https://www.quantamagazine.org/feed/
 https://www.sciencedaily.com/rss/top/science.xml max=25
 
 [World] max=6
+https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml max=25
 https://feeds.bbci.co.uk/news/world/rss.xml max=40
 https://rss.nytimes.com/services/xml/rss/nyt/World.xml max=40
 https://www.theguardian.com/world/rss max=40
