@@ -56,7 +56,8 @@ def load_topics(path: Path = FEEDS_FILE) -> list[dict]:
         header = re.match(r"^\[(.+?)\]\s*(.*)$", line)
         if header:
             opts = dict(re.findall(r"(\w+)=(\S+)", header.group(2)))
-            current = {"name": header.group(1).strip(), "max": int(opts.get("max", 6)), "feeds": []}
+            current = {"name": header.group(1).strip(), "max": int(opts.get("max", 6)), "feeds": [],
+                       "overlap": opts.get("overlap", "").lower() in ("yes", "true", "1")}
             topics.append(current)
             continue
         parts = line.split()
@@ -64,7 +65,7 @@ def load_topics(path: Path = FEEDS_FILE) -> list[dict]:
             print(f"feeds.txt line {lineno}: not a URL, skipped: {raw!r}", file=sys.stderr)
             continue
         if current is None:
-            current = {"name": "General", "max": 6, "feeds": []}
+            current = {"name": "General", "max": 6, "feeds": [], "overlap": False}
             topics.append(current)
         opts = dict(re.findall(r"(\w+)=(\S+)", " ".join(parts[1:])))
         current["feeds"].append({"url": parts[0], "cap": int(opts.get("max", DEFAULT_FEED_CAP))})
@@ -199,7 +200,7 @@ def collect(topics: list[dict], seen: dict) -> tuple[list[dict], set[str], dict]
 
     items, ids, all_fresh = [], set(), set()
     stats = {"fetched": 0, "stale": 0, "capped": 0, "dupes": 0, "failed": []}
-    for (_, feed), result in zip(jobs, results):
+    for (topic, feed), result in zip(jobs, results):
         if result is None:
             stats["failed"].append(re.sub(r"^https?://(www\.)?([^/]+).*", r"\2", feed["url"]))
             continue
@@ -208,9 +209,12 @@ def collect(topics: list[dict], seen: dict) -> tuple[list[dict], set[str], dict]
         stats["stale"] += total - len(fresh)
         stats["capped"] += max(0, len(fresh) - feed["cap"])
         all_fresh.update(e["id"] for e in fresh)
+        # The same story can appear in two feeds: keep only the first. An overlap=yes topic dedupes
+        # only within itself, so its stories can also show up under their own topic.
+        scope = topic["name"] if topic.get("overlap") else None
         for e in fresh[: feed["cap"]]:
-            if e["id"] not in ids:          # the same story can appear in two feeds
-                ids.add(e["id"])
+            if (scope, e["id"]) not in ids:
+                ids.add((scope, e["id"]))
                 items.append(e)
             else:
                 stats["dupes"] += 1
@@ -288,7 +292,12 @@ def build(items: list[dict], topics: list[dict], choice: dict, stats: dict, meth
     if stats["failed"]:
         stat_lines.append(f"{len(stats['failed'])} feed(s) failed: {', '.join(stats['failed'])}")
 
-    return {"top": [i for i in choice["top"] if i in notes][:6], "by_topic": by_topic,
+    top, top_stories = [], set()
+    for i in choice["top"]:             # a story kept under two topics only leads once
+        if i in notes and items[i]["id"] not in top_stories:
+            top.append(i)
+            top_stories.add(items[i]["id"])
+    return {"top": top[:6], "by_topic": by_topic,
             "notes": notes, "headline": (choice.get("headline") or "").strip(),
             "stats": stat_lines}
 
@@ -347,7 +356,9 @@ def render_push(items, d) -> tuple[list[str], list[str]]:
         return f"• [{e['title']}]({e['link']}) · {e['source']}" if md else f"• {e['title']} · {e['source']}\n  {e['link']}"
 
     top = d["top"]
-    sections = [("Top", list(top))] + [(name, [i for i in ids if i not in top]) for name, ids in d["by_topic"].items()]
+    top_stories = {items[i]["id"] for i in top}
+    sections = [("Top", list(top))] + [(name, [i for i in ids if items[i]["id"] not in top_stories])
+                                       for name, ids in d["by_topic"].items()]
     digest = _pack_push(([d["headline"]] if d["headline"] else []) + _push_blocks(sections, line, md))
     return digest, _pack_push(["\n".join(d["stats"])])
 

@@ -3,10 +3,11 @@
 #   [Topic name] max=N     starts a topic; N = most headlines from this topic per digest
 #   https://…/feed         one feed URL per line under its topic
 #   https://…/feed max=3   optional: take at most 3 fresh items from this one feed
+#   [Topic] max=N overlap=yes   optional: this topic's stories can also appear under their own topic
 #
 # Lines starting with # are ignored, so you can "turn off" a feed by putting # in front of it.
 
-[Headlines] max=5
+[Headlines] max=5 overlap=yes
 https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml max=25
 https://feeds.npr.org/1001/rss.xml max=25
 https://www.pbs.org/newshour/feeds/rss/headlines max=20
